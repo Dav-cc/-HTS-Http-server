@@ -19,24 +19,25 @@ char file_cont[4096];
 
 
 
+void response(char *status, char *cont_type, int cont_len, char *body) {
+    sprintf(res, "%s\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%s", status, cont_type, cont_len ,body);
+}
+
 void file_sender(int sockfd){
    struct stat file;
 
    char* filepath = strstr(uri, "/files/" );
    char *filename = filepath + 7;
 
-   int filefd = open(filename, 0644);
+   int filefd = open(filename,O_RDONLY, S_IRWXU );
    if(filefd == -1){
-       write(sockfd, r400, strlen(r400)); // it wont work ((implement err handling for this shit ))
+       write(sockfd, r400, strlen(r400));
        return ;
    }
    stat(filename, &file);
    int bytrd = read(filefd, file_cont,file.st_size );
 
-}
-
-void response(char *status, char *cont_type, int cont_len, char *body) {
-    sprintf(res, "%s\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%s", status, cont_type, cont_len ,body);
+    response("HTTP/1.1 200 OK","application/octet-stream",strlen(file_cont) , file_cont);
 }
 
 void header_parser(int sockfd){
@@ -67,7 +68,6 @@ void pars_req_line(int sockfd){
 }
 }
 
-
 void process(int sockfd) {
         pars_req_line(sockfd);
         if((strcmp(uri, "/")) == 0) {
@@ -85,7 +85,6 @@ void process(int sockfd) {
         }else if((strncmp(uri, "/files",5)) == 0){
             file_sender(sockfd);
 
-            response("HTTP/1.1 200 OK","application/octet-stream",strlen(file_cont) , file_cont);
             write(sockfd, res, strlen(res));
         }
         else{
@@ -96,6 +95,7 @@ void process(int sockfd) {
 
 
 int main() {
+    printf("\033[H\033[J");
     printf("server starting ...\n");
 
     struct sockaddr_in server_addr, client_addr;
