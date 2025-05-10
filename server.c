@@ -7,11 +7,13 @@
 #include <netinet/in.h>
 
 char* r200 ="HTTP/1.1 200 OK\r\n\r\n";
+
 char* r404 ="HTTP/1.1 404 Not Found\r\n"
              "Content-Type: text/plain\r\n"
              "Content-Length: 13\r\n"
              "\r\n"
              "404 Not Found";
+
 char sec_buf[4096];
 char method[30];
 char uri[4096];
