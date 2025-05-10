@@ -1,7 +1,6 @@
 # Simple HTTP Server in C
 
-This project is a basic HTTP server written in pure C. It demonstrates low-level socket programming and basic HTTP request parsing. The server handles several routes and responds with either plain text or file content.
-
+This project is a basic HTTP server written in pure C. It demonstrates low-level socket programming and basic HTTP request parsing. 
 ---
 
 ## ✨ Features
@@ -21,8 +20,4 @@ This project is a basic HTTP server written in pure C. It demonstrates low-level
 
 1. **Compile the code**:
    ```bash
-   gcc server.c -o server
-   ```makefile
-   make
-
-    
+       make
