@@ -48,7 +48,6 @@ int file_sender(int sockfd){
    }
    int bytrd = read(filefd, file_cont,file.st_size );
    if(bytrd <= 0){
-       write(sockfd, r404, strlen(r404));
        printf("error in reading file");
        write(sockfd, r404, strlen(r404));
        close(sockfd);
@@ -115,7 +114,7 @@ void process(int sockfd) {
 
 
 int main() {
-    //printf("\033[H\033[J");
+    printf("\033[H\033[J");
     printf("server starting ...\n");
 
     struct sockaddr_in server_addr, client_addr;
