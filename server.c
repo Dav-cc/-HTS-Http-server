@@ -7,37 +7,54 @@
 #include <netinet/in.h>
 
 char* r200 ="HTTP/1.1 200 OK\r\n\r\n";
-char* r400 ="HTTP/1.1 400 Not Found\r\n\r\n";
-
+char* r404 ="HTTP/1.1 404 Not Found\r\n"
+             "Content-Type: text/plain\r\n"
+             "Content-Length: 13\r\n"
+             "\r\n"
+             "404 Not Found";
 char sec_buf[4096];
 char method[30];
 char uri[4096];
 char ver[90];
 char buf[4096];
 char res[4096];
-char file_cont[4096];
-
+char file_cont[4096] = {0};
 
 
 void response(char *status, char *cont_type, int cont_len, char *body) {
     sprintf(res, "%s\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%s", status, cont_type, cont_len ,body);
 }
 
-void file_sender(int sockfd){
+int file_sender(int sockfd){
    struct stat file;
 
    char* filepath = strstr(uri, "/files/" );
    char *filename = filepath + 7;
 
    int filefd = open(filename,O_RDONLY, S_IRWXU );
-   if(filefd == -1){
-       write(sockfd, r400, strlen(r400));
-       return ;
+   if(filefd <=0 ){
+       write(sockfd, r404, strlen(r404));
+       close(sockfd);
+       return 1 ;
    }
-   stat(filename, &file);
+   int st = stat(filename, &file);
+   if(st == -1){
+       write(sockfd, r404, strlen(r404));
+       printf("error i stat func");
+       close(sockfd);
+       return 1;
+   }
    int bytrd = read(filefd, file_cont,file.st_size );
+   if(bytrd <= 0){
+       write(sockfd, r404, strlen(r404));
+       printf("error in reading file");
+       write(sockfd, r404, strlen(r404));
+       close(sockfd);
+       return 1;
+   }
 
-    response("HTTP/1.1 200 OK","application/octet-stream",strlen(file_cont) , file_cont);
+    response("HTTP/1.1 200 OK","application/octet-stream", bytrd, file_cont);
+    return 0;
 }
 
 void header_parser(int sockfd){
@@ -69,11 +86,11 @@ void pars_req_line(int sockfd){
 }
 
 void process(int sockfd) {
-        pars_req_line(sockfd);
+        pars_req_line(sockfd); // init method, uri and version of http request
+
         if((strcmp(uri, "/")) == 0) {
             write(sockfd, r200, strlen(r200));
         }else if((strncmp(uri, "/echo/",6) == 0)){
-            int len = strlen(uri);
             char *val = uri + 6;
             response("HTTP/1.1 200 OK","text/plain", strlen(val), val);
             write(sockfd, res, strlen(res));
@@ -83,19 +100,20 @@ void process(int sockfd) {
             header_parser(sockfd);
 
         }else if((strncmp(uri, "/files",5)) == 0){
-            file_sender(sockfd);
-
-            write(sockfd, res, strlen(res));
+            if(!file_sender(sockfd)){
+                write(sockfd, res, strlen(res));
+            }
+            memset(res, 0, sizeof(res));
         }
         else{
-            write(sockfd, r400, strlen(r400));
+            write(sockfd, r404, strlen(r404));
         }
 
 }
 
 
 int main() {
-    printf("\033[H\033[J");
+    //printf("\033[H\033[J");
     printf("server starting ...\n");
 
     struct sockaddr_in server_addr, client_addr;
@@ -124,6 +142,7 @@ int main() {
         fprintf(stderr, "bind func err\n");
         return 1;
     }
+    printf("binding to port 8181");
 
     if ((listen(sockfd, 5)) != 0) {
         fprintf(stderr, "listen func err\n");
@@ -136,6 +155,7 @@ int main() {
             fprintf(stderr, "accept err\n");
             continue;
         }
+        printf("connection accepted");
 
         process(clientfd);
     }
